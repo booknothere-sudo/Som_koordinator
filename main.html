@@ -1,0 +1,1635 @@
+    <div class="modal" id="profileSettingsModal"><div class="box"><div class="boxhead"><h3>Profil sozlamalari</h3><button class="close" type="button" onclick="closeM('profileSettingsModal')" aria-label="Yopish">×</button></div><form id="profileSettingsForm" class="formrow"><div class="full"><label>Ko‘rinadigan ism</label><input class="field" id="profileDisplayName" required></div><div><label>Til</label><select class="field" id="profileLocale"><option value="uz">O‘zbekcha</option><option value="ru">Русский</option></select></div><div><label><input id="profileNotifications" type="checkbox"> Email bildirishnomalari</label></div><div class="full"><label>Profil rasmi</label><input class="field" id="profilePhoto" type="file" accept="image/jpeg,image/png,image/webp,image/gif"></div><div class="full" style="text-align:right"><button class="btn">Saqlash</button></div></form><hr><form id="passwordForm" class="formrow"><div class="full"><h3>Parolni almashtirish</h3></div><div><label>Joriy parol</label><input class="field" id="currentPassword" type="password" autocomplete="current-password" required></div><div><label>Yangi parol (kamida 12 belgi)</label><input class="field" id="newPassword" type="password" autocomplete="new-password" minlength="12" required></div><div class="full" style="text-align:right"><button class="btn alt">Parolni yangilash</button></div></form><p class="auth-message" id="profileMessage" role="status" aria-live="polite"></p></div></div>
+    <div class="modal" id="authModal"><div class="box"><div class="boxhead"><h3 id="authTitle">Tizimga kirish</h3><button class="close" type="button" onclick="closeM('authModal')" aria-label="Yopish">×</button></div><div class="two" style="margin-bottom:14px"><button class="btn alt" id="showLogin" type="button">Kirish</button><button class="btn alt" id="showRegister" type="button">Talaba sifatida ro‘yxatdan o‘tish</button></div><form id="loginForm" class="formrow"><div class="full"><label>Email</label><input class="field" id="loginEmail" type="email" autocomplete="username" required></div><div class="full"><label>Parol</label><input class="field" id="loginPassword" type="password" autocomplete="current-password" required></div><div class="full" style="text-align:right"><button class="btn">Kirish</button></div></form><form id="registrationForm" class="formrow" hidden><div class="full"><label>F.I.Sh.</label><input class="field" id="registerName" required></div><div><label>Email</label><input class="field" id="registerEmail" type="email" autocomplete="email" required></div><div><label>Parol (kamida 12 belgi)</label><input class="field" id="registerPassword" type="password" autocomplete="new-password" minlength="12" required></div><div><label>Talabalik raqami</label><input class="field" id="registerStudentNumber" required></div><div><label>Fakultet</label><input class="field" id="registerFaculty" required></div><div class="full"><label>Guruh</label><input class="field" id="registerGroup" required></div><div class="full"><label>Dekanat belgilagan tartibda olingan SOM talabalik rasmi</label><input class="field" id="verificationPhoto" type="file" accept="image/jpeg,image/png,image/webp,image/gif" required><small class="sub">Rasm faqat dekanat ko‘rib chiqishi uchun saqlanadi.</small></div><div class="full"><label><input id="photoPolicyAck" type="checkbox" required> Rasm talablari bilan tanishdim va to‘g‘ri topshirdim.</label></div><div class="full" style="text-align:right"><button class="btn">Tekshiruvga yuborish</button></div></form><p class="auth-message" id="authMessage" role="status" aria-live="polite"></p></div></div>
+<!doctype html>
+<html lang="uz">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="theme-color" content="#061735">
+    <title>Yoshlar kengashi | Soliq oliy maktabi</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --n: #061735;
+            --n2: #0a2450;
+            --g: #e8cf91;
+            --g2: #c8a65d;
+            --w: #f8faff;
+            --m: #b7c5dc;
+            --line: #e8cf9140
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            background: radial-gradient(ellipse at 50% 5%, #12366b, transparent 45%), linear-gradient(135deg, #06132e, #09234b 60%, #061735);
+            background-attachment: fixed;
+            color: var(--w);
+            font-family: Manrope, Arial, sans-serif
+        }
+
+        button,
+        input,
+        textarea,
+        select {
+            font: inherit
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            min-height: 100vh
+        }
+
+        .side {
+            height: 100vh;
+            position: sticky;
+            top: 0;
+            background: #06152dee;
+            border-right: 1px solid #ffffff18;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            z-index: 5
+        }
+
+        .brand {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            padding: 5px 8px 22px;
+            border-bottom: 1px solid #ffffff18;
+            font-weight: 800;
+            font-size: 12px;
+            cursor: pointer
+        }
+
+        .brand-icon {
+            width: 44px;
+            height: 44px;
+            padding: 4px;
+            object-fit: contain;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: #000
+        }
+        .auth-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--m);
+            font-size: 10px
+        }
+
+        .auth-controls[hidden],
+        [hidden] {
+            display: none !important
+        }
+
+        .verification-card {
+            display: grid;
+            grid-template-columns: minmax(140px, .7fr) 1.3fr;
+            gap: 16px;
+            align-items: start;
+            padding: 14px 0;
+            border-bottom: 1px solid #ffffff20
+        }
+
+        .verification-card:last-child {
+            border-bottom: 0
+        }
+
+        .verification-card img {
+            width: 100%;
+            max-height: 260px;
+            object-fit: contain;
+            background: #030b18;
+            border: 1px solid #ffffff22;
+            border-radius: 6px
+        }
+
+        .auth-message {
+            min-height: 18px;
+            margin: 10px 0 0;
+            color: var(--g);
+            font-size: 11px
+        }
+
+        .mark {
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            width: 44px;
+            height: 44px;
+            display: grid;
+            place-items: center;
+            color: var(--g);
+            font-size: 23px
+        }
+
+        .brand small {
+            display: block;
+            color: var(--m);
+            font-size: 9px;
+            letter-spacing: .17em;
+            margin-top: 4px
+        }
+
+        .label {
+            font-size: 9px;
+            letter-spacing: .2em;
+            color: #8298b8;
+            padding: 22px 12px 8px;
+            font-weight: 800
+        }
+
+        .nav {
+            display: grid;
+            gap: 5px
+        }
+
+        .nav button {
+            background: none;
+            border: 0;
+            color: var(--m);
+            text-align: left;
+            padding: 11px;
+            border-radius: 9px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 700
+        }
+
+        .nav button:hover,
+        .nav button.on {
+            background: #e8cf911b;
+            color: var(--g)
+        }
+
+        .user {
+            margin-top: auto;
+            border-top: 1px solid #ffffff18;
+            padding: 15px 6px 0;
+            font-size: 10px
+        }
+
+        .main {
+            min-width: 0
+        }
+
+        .top {
+            height: 70px;
+            position: sticky;
+            top: 0;
+            z-index: 4;
+            background: #071a35e8;
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #ffffff18;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 30px;
+            color: var(--m);
+            font-size: 11px
+        }
+
+        .top strong {
+            color: white
+        }
+
+        .content {
+            max-width: 1400px;
+            margin: auto;
+            padding: 28px 30px 50px
+        }
+
+        .page {
+            display: none;
+            animation: fade .25s
+        }
+
+        .page.show {
+            display: block
+        }
+
+        @keyframes fade {
+            from {
+                opacity: 0;
+                transform: translateY(8px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .head {
+            display: flex;
+            align-items: end;
+            justify-content: space-between;
+            gap: 15px;
+            margin-bottom: 23px
+        }
+
+        .eyebrow {
+            color: var(--g);
+            font-size: 10px;
+            letter-spacing: .22em;
+            font-weight: 800;
+            text-transform: uppercase
+        }
+
+        .title {
+            font-size: clamp(26px, 3vw, 37px);
+            letter-spacing: -.05em;
+            margin: 8px 0
+        }
+
+        .sub {
+            color: var(--m);
+            font-size: 11px;
+            line-height: 1.7;
+            margin: 0
+        }
+
+        .btn {
+            border: 1px solid var(--g2);
+            border-radius: 9px;
+            padding: 10px 14px;
+            background: linear-gradient(135deg, var(--g), var(--g2));
+            color: #14213a;
+            font-weight: 800;
+            font-size: 10px;
+            cursor: pointer
+        }
+
+        .btn.alt {
+            background: transparent;
+            color: var(--g);
+            border-color: var(--line)
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 13px;
+            margin: 20px 0
+        }
+
+        .card,
+        .stat {
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: linear-gradient(145deg, #102c57e8, #071831ed);
+            box-shadow: 0 15px 35px #020b1e35
+        }
+
+        .stat {
+            padding: 16px
+        }
+
+        .stat small {
+            color: var(--m);
+            font-size: 10px
+        }
+
+        .num {
+            font-size: 28px;
+            font-weight: 800;
+            margin: 9px 0 2px
+        }
+
+        .stat em {
+            font-size: 9px;
+            color: #91a9ca;
+            font-style: normal
+        }
+
+        .two {
+            display: grid;
+            grid-template-columns: 1.3fr 1fr;
+            gap: 14px
+        }
+
+        .card {
+            padding: 18px;
+            min-width: 0
+        }
+
+        .card h3 {
+            font-size: 13px;
+            margin: 0 0 16px
+        }
+
+        .bar {
+            display: grid;
+            grid-template-columns: 110px 1fr 30px;
+            gap: 9px;
+            align-items: center;
+            margin: 14px 0;
+            font-size: 10px
+        }
+
+        .track {
+            height: 6px;
+            border-radius: 20px;
+            background: #ffffff15;
+            overflow: hidden
+        }
+
+        .track i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, var(--g2), var(--g));
+            border-radius: 20px
+        }
+
+        .bar b {
+            color: var(--g);
+            text-align: right
+        }
+
+        .activity {
+            display: grid;
+            gap: 15px
+        }
+
+        .activity div {
+            border-left: 2px solid var(--g2);
+            padding-left: 12px
+        }
+
+        .activity strong {
+            display: block;
+            font-size: 10px
+        }
+
+        .activity small {
+            color: var(--m);
+            font-size: 9px
+        }
+
+        .tablewrap {
+            overflow: auto;
+            border: 1px solid #ffffff16;
+            border-radius: 10px;
+            margin-top: 14px
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            min-width: 600px
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ffffff12;
+            font-size: 10px
+        }
+
+        th {
+            color: #91a9ca;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: .1em
+        }
+
+        td {
+            color: #e5edf9
+        }
+
+        .tag {
+            border: 1px solid #78d6b044;
+            color: #78d6b0;
+            background: #78d6b018;
+            border-radius: 30px;
+            padding: 5px 8px;
+            font-size: 9px
+        }
+
+        .tag.warn {
+            color: var(--g);
+            border-color: var(--line);
+            background: #e8cf9115
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 13px
+        }
+
+        .member {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: 13px;
+            background: linear-gradient(145deg, #102c57, #071831);
+            cursor: pointer;
+            transition: .2s
+        }
+
+        .member:hover {
+            transform: translateY(-4px);
+            border-color: var(--g2)
+        }
+
+        .member strong {
+            font-size: 11px
+        }
+
+        .member p {
+            color: var(--g);
+            font-size: 9px;
+            line-height: 1.5
+        }
+
+        .score {
+            display: flex;
+            justify-content: space-between;
+            color: var(--m);
+            font-size: 9px;
+            margin: 15px 0 7px
+        }
+
+        .score b {
+            color: white;
+            font-size: 15px
+        }
+
+        .notice {
+            border: 1px solid var(--line);
+            background: #e8cf9110;
+            color: #e8d9b5;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 10px;
+            line-height: 1.7;
+            margin: 14px 0
+        }
+
+        .formrow {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px
+        }
+
+        .formrow label {
+            display: block;
+            color: var(--m);
+            font-size: 10px;
+            margin-bottom: 6px
+        }
+
+        .field,
+        select,
+        textarea {
+            width: 100%;
+            background: #071a35;
+            border: 1px solid #29466d;
+            color: white;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 11px
+        }
+
+        .formrow .full {
+            grid-column: 1/-1
+        }
+
+        textarea {
+            min-height: 95px
+        }
+
+        .report {
+            padding: 13px;
+            border: 1px solid #ffffff18;
+            border-radius: 10px;
+            margin: 10px 0;
+            background: #0a2142
+        }
+
+        .report strong {
+            font-size: 11px
+        }
+
+        .report p {
+            font-size: 10px;
+            color: var(--m);
+            line-height: 1.6
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #020918dc;
+            backdrop-filter: blur(9px);
+            z-index: 10;
+            place-items: center;
+            padding: 18px
+        }
+
+        .modal.open {
+            display: grid
+        }
+
+        .box {
+            width: min(600px, 100%);
+            max-height: 90vh;
+            overflow: auto;
+            background: linear-gradient(145deg, #102c57, #071832);
+            border: 1px solid var(--g2);
+            border-radius: 16px;
+            padding: 21px
+        }
+
+        .boxhead {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 17px
+        }
+
+        .boxhead h3 {
+            margin: 0;
+            font-size: 16px
+        }
+
+        .close {
+            background: #0d2850;
+            color: white;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer
+        }
+
+        .foot {
+            padding: 20px 30px;
+            border-top: 1px solid #ffffff18;
+            color: #8298b8;
+            font-size: 9px;
+            display: flex;
+            justify-content: space-between
+        }
+
+        .mobile {
+            display: none
+        }
+
+        @media(max-width:900px) {
+            .app {
+                grid-template-columns: 215px 1fr
+            }
+
+            .content {
+                padding: 22px 18px
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media(max-width:700px) {
+            .app {
+                display: block
+            }
+
+            .side {
+                position: fixed;
+                left: -260px;
+                width: 250px;
+                transition: .25s
+            }
+
+            .side.open {
+                left: 0
+            }
+
+            .mobile {
+                display: inline-block
+            }
+
+            .top {
+                padding: 0 14px;
+                height: 62px
+            }
+
+            .content {
+                padding: 20px 14px
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr)
+            }
+
+            .two {
+                grid-template-columns: 1fr
+            }
+
+            .head {
+                align-items: start;
+                flex-direction: column
+            }
+
+            .foot {
+                display: block;
+                line-height: 2;
+                padding: 16px
+            }
+
+            .grid {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        @media(max-width:430px) {
+            .grid {
+                grid-template-columns: 1fr
+            }
+
+            .formrow {
+                grid-template-columns: 1fr
+            }
+
+            .formrow .full {
+                grid-column: auto
+            }
+        }
+
+        .member.team-person {
+            padding: 0 0 14px;
+            overflow: hidden;
+            text-align: center;
+            cursor: pointer;
+            transition: transform .3s, border-color .3s, box-shadow .3s
+        }
+
+        .member.team-person:hover {
+            transform: translateY(-5px);
+            border-color: var(--g2);
+            box-shadow: 0 15px 35px #020b1e70
+        }
+
+        .member-portrait {
+            position: relative;
+            margin: 5px 5px 13px;
+            padding: 5px;
+            aspect-ratio: .9;
+            border: 1px solid var(--g2);
+            border-radius: 11px;
+            background: linear-gradient(145deg, #e8cf912e, #ffffff05);
+            overflow: hidden
+        }
+
+        .member-portrait:after {
+            content: "";
+            position: absolute;
+            inset: 5px;
+            border: 1px solid #ffffff2b;
+            border-radius: 7px;
+            pointer-events: none
+        }
+
+        .member-portrait img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+            border-radius: 7px;
+            transition: transform .5s
+        }
+
+        .member.team-person:hover .member-portrait img {
+            transform: scale(1.04)
+        }
+
+        .portrait-fallback {
+            height: 100%;
+            display: grid;
+            place-items: center;
+            color: var(--g);
+            font-size: 38px;
+            font-weight: 800;
+            background: radial-gradient(ellipse at 50% 20%, #234477, #0a1d3b)
+        }
+
+        .member.team-person>strong {
+            display: block;
+            padding: 0 10px;
+            font-size: 14px
+        }
+
+        .member.team-person>p {
+            min-height: 42px;
+            padding: 0 10px;
+            color: var(--g);
+            font-size: 10px;
+            line-height: 1.5
+        }
+
+        .member.team-person .score {
+            padding: 0 12px;
+            text-align: left
+        }
+
+        .member.team-person .track {
+            margin: 8px 12px 0
+        }
+
+        .detail-portrait {
+            display: block;
+            width: 110px;
+            aspect-ratio: .77;
+            object-fit: cover;
+            object-position: top;
+            padding: 4px;
+            border: 1px solid var(--g2);
+            border-radius: 12px;
+            background: linear-gradient(145deg, #e8cf912e, #ffffff05)
+        }
+
+        .member-photo-preview {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px
+        }
+
+        .member-photo-preview[hidden] {
+            display: none
+        }
+
+        .member-photo-preview img {
+            width: 74px;
+            height: 88px;
+            object-fit: cover;
+            border: 1px solid var(--g2);
+            border-radius: 7px
+        }
+
+        .report-media {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 7px;
+            min-height: 84px;
+            margin: 12px 0
+        }
+
+        .report-media img {
+            display: block;
+            width: 100%;
+            height: 130px;
+            object-fit: cover;
+            border: 1px solid #ffffff24;
+            border-radius: 6px
+        }
+
+        .report-media:empty {
+            min-height: 84px
+        }
+
+        .club-rank-row {
+            display: grid;
+            grid-template-columns: 28px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 10px;
+            padding: 11px 0;
+            border-bottom: 1px solid #ffffff18
+        }
+
+        .club-rank-row:last-child {
+            border-bottom: 0
+        }
+
+        .club-rank-row>strong:first-child {
+            color: var(--g);
+            font-size: 15px
+        }
+
+        .club-rank-row small,
+        .work-history small {
+            display: block;
+            margin-top: 4px;
+            color: var(--m);
+            font-size: 10px
+        }
+
+        .work-history>div {
+            padding: 10px 0;
+            border-bottom: 1px solid #ffffff18
+        }
+
+        .work-history>div:last-child {
+            border-bottom: 0
+        }
+
+        @media(max-width:620px) {
+            .report-media {
+                grid-template-columns: repeat(2, minmax(0, 1fr))
+            }
+
+            .report-media img {
+                height: 125px
+            }
+        }
+
+        .media-category {
+            padding: 14px
+        }
+
+        .media-category h3 {
+            margin: 0 0 12px;
+            color: var(--g);
+            font-size: 13px
+        }
+
+        .media-event {
+            border-top: 1px solid #ffffff20;
+            padding-top: 12px;
+            margin-top: 12px
+        }
+
+        .media-event h4 {
+            margin: 0 0 5px;
+            font-size: 12px
+        }
+
+        .media-event p {
+            margin: 6px 0;
+            color: var(--m);
+            font-size: 10px;
+            line-height: 1.55
+        }
+
+        .media-event small {
+            color: #91a5c4;
+            font-size: 9px
+        }
+
+        .media-gallery {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
+            min-height: 68px;
+            margin-top: 10px
+        }
+
+        .media-gallery img {
+            width: 100%;
+            height: 105px;
+            object-fit: cover;
+            border: 1px solid #ffffff24;
+            border-radius: 6px
+        }
+
+        .media-toolbar {
+            display: grid;
+            grid-template-columns: minmax(180px, 1.5fr) repeat(2, minmax(150px, 1fr));
+            gap: 10px;
+            margin-bottom: 16px
+        }
+
+        .media-category h3 {
+            display: flex;
+            justify-content: space-between;
+            align-items: center
+        }
+
+        .media-count {
+            color: var(--m);
+            font-size: 10px;
+            font-weight: 600
+        }
+
+        .media-gallery {
+            grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+            gap: 8px
+        }
+
+        .media-photo {
+            display: block;
+            width: 100%;
+            aspect-ratio: 4/3;
+            padding: 0;
+            overflow: hidden;
+            border: 1px solid #ffffff24;
+            border-radius: 6px;
+            background: #061735;
+            cursor: zoom-in
+        }
+
+        .media-photo img {
+            display: block;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform .25s, filter .25s
+        }
+
+        .media-photo:hover img,
+        .media-photo:focus-visible img {
+            transform: scale(1.05);
+            filter: brightness(1.1)
+        }
+
+        .gallery-empty {
+            grid-column: 1/-1;
+            color: var(--m);
+            padding: 30px 12px;
+            text-align: center;
+            border: 1px dashed #ffffff30;
+            border-radius: 8px;
+            font-size: 12px
+        }
+
+        .gallery-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 20;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 24px;
+            background: #020918ed;
+            backdrop-filter: blur(10px)
+        }
+
+        .gallery-modal.open {
+            display: flex
+        }
+
+        .gallery-stage {
+            width: min(1000px, calc(100% - 112px));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px
+        }
+
+        .gallery-stage img {
+            display: block;
+            width: 100%;
+            height: min(72vh, 760px);
+            object-fit: contain
+        }
+
+        .gallery-caption {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            color: var(--m);
+            font-size: 11px
+        }
+
+        .gallery-caption strong {
+            color: var(--w);
+            font-size: 13px
+        }
+
+        .gallery-control {
+            flex: 0 0 42px;
+            width: 42px;
+            height: 42px;
+            border: 1px solid var(--line);
+            border-radius: 50%;
+            background: #102c57;
+            color: var(--w);
+            font-size: 22px;
+            cursor: pointer
+        }
+
+        .gallery-control:hover {
+            background: #1b3d6c;
+            color: var(--g)
+        }
+
+        .gallery-control:disabled {
+            opacity: .35;
+            cursor: default
+        }
+
+        @media(max-width:700px) {
+            .media-toolbar {
+                grid-template-columns: 1fr
+            }
+
+            .gallery-modal {
+                gap: 7px;
+                padding: 12px
+            }
+
+            .gallery-stage {
+                width: calc(100% - 88px)
+            }
+
+            .gallery-stage img {
+                height: 65vh
+            }
+
+            .gallery-control {
+                flex-basis: 36px;
+                width: 36px;
+                height: 36px
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <aside class="side" id="side">
+            <div class="brand" onclick="page('home')">
+                <img class="brand-icon" src="icon.png" alt="Soliq Oliy Maktabi ramzi">
+                <div>SOLIQ OLIY MAKTABI<small>YOSHLAR KENGASHI</small></div>
+            </div>
+            <div class="label">ASOSIY</div>
+            <nav class="nav">
+                <button class="on" data-page="home">⌂　Boshqaruv paneli</button><button data-page="team">♙　Kengash
+                    a’zolari</button><button data-page="clubs">♧　Klublar</button><button data-page="duties">▤　Vazifalar va KPI</button><button
+                    data-page="reports">▧　Haftalik hisobotlar</button><button data-page="ranking">↗　Ochiq
+                    reyting</button>
+            </nav>
+            <div class="label">FAOLIYAT</div>
+            <nav class="nav"><button data-page="media">▣　Media kutubxona</button><button
+                    data-page="elections">⚑　Saylovlar</button><button data-page="finance">◈　Budjet va homiylik</button>
+            </nav>
+            <div class="label">TIZIM</div>
+            <nav class="nav"><button data-page="rules">⚖　Nizom va tartib</button><button id="verificationNav" data-page="verification" hidden>▧　Talaba verifikatsiyasi</button></nav>
+            <div class="user">◉　<span id="sidebarName">Mehmon</span><br><span id="sidebarMeta" style="color:var(--m)">Ochiq ma’lumotlar</span>
+            </div>
+        </aside>
+        <main class="main">
+            <header class="top"><span><button class="btn alt mobile"
+                        onclick="document.getElementById('side').classList.toggle('open')">☰</button>　Soliq oliy maktabi
+                    / <strong id="crumb">Boshqaruv paneli</strong></span><span id="modeBadge" style="color:#78d6b0">● DEMO REJIM</span>
+                <div class="auth-controls"><span id="authSummary">Mehmon</span><button class="btn alt" id="authOpen" type="button">Kirish / Ro‘yxatdan o‘tish</button><button class="btn alt" id="profileSettingsOpen" type="button" hidden>Profil sozlamalari</button><button class="btn alt" id="logoutButton" type="button" hidden>Chiqish</button></div>
+            </header>
+            <div class="content">
+                <section class="page show" id="home">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Soliq oliy maktabi · 2026</div>
+                            <h1 class="title">Yoshlar kengashi</h1>
+                            <p class="sub">Jamoa faoliyati, haftalik natijalar va ijro intizomi yagona tizimda.</p>
+                        </div><button class="btn" data-write-role="coordinator" onclick="page('reports');openM('reportModal')">＋ Hisobot
+                            topshirish</button>
+                    </div>
+                    <div class="stats">
+                        <div class="stat"><small>Kengash a’zolari</small>
+                            <div class="num" id="memberCount">11</div><em>1 yetakchi · 10 koordinator</em>
+                        </div>
+                        <div class="stat"><small>Faol loyihalar</small>
+                            <div class="num" id="activeClubCount">0</div><em>Faol klublar</em>
+                        </div>
+                        <div class="stat"><small>Hisobotlar</small>
+                            <div class="num" id="reportCount">03</div><em>Joriy hafta</em>
+                        </div>
+                        <div class="stat"><small>O‘rtacha KPI</small>
+                            <div class="num"><span id="averageKpi">82</span><small>/100</small></div><em>Hisoblangan natija</em>
+                        </div>
+                    </div>
+                    <div class="two" style="margin-bottom:15px">
+                        <div class="card">
+                            <h3>Top 3 faol klub</h3>
+                            <div id="topClubs"><p class="sub">Klublar ma’lumoti yuklanmoqda.</p></div>
+                        </div>
+                        <div class="card">
+                            <h3>Amalga oshirilgan ishlar tarixi</h3>
+                            <div class="work-history" id="workHistory"><p class="sub">Tasdiqlangan faoliyatlar shu yerda ko‘rsatiladi.</p></div>
+                        </div>
+                    </div>
+                    <div class="two">
+                        <div class="card">
+                            <h3>Yo‘nalishlar samaradorligi</h3>
+                            <div class="bar"><span>Intellektual</span>
+                                <div class="track"><i style="width:92%"></i></div><b>92</b>
+                            </div>
+                            <div class="bar"><span>Media</span>
+                                <div class="track"><i style="width:88%"></i></div><b>88</b>
+                            </div>
+                            <div class="bar"><span>Innovatsiya</span>
+                                <div class="track"><i style="width:84%"></i></div><b>84</b>
+                            </div>
+                            <div class="bar"><span>Besh tashabbus</span>
+                                <div class="track"><i style="width:80%"></i></div><b>80</b>
+                            </div>
+                            <div class="bar"><span>Akademik guruhlar</span>
+                                <div class="track"><i style="width:75%"></i></div><b>75</b>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>So‘nggi faollik</h3>
+                            <div class="activity" id="activity">
+                                <div><strong>Haftalik hisobotlar oynasi ochiq</strong><small>Yakshanba · 23:59
+                                        gacha</small></div>
+                                <div><strong>Media kutubxona yangilandi</strong><small>Juma · 14:20</small></div>
+                                <div><strong>Intellektual loyiha tasdiqlandi</strong><small>Payshanba · 16:05</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card" style="margin-top:15px">
+                        <h3>Koordinatorlar holati</h3>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Koordinator</th>
+                                        <th>Yo‘nalish</th>
+                                        <th>KPI</th>
+                                        <th>Holat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dashRows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                <section class="page" id="team">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Jamoa tarkibi</div>
+                            <h1 class="title">Kengash a’zolari</h1>
+                            <p class="sub">Har bir a’zoning vakolati, vazifalari va natijalari.</p>
+                        </div><button class="btn alt" data-write-role="admin" onclick="openM('memberModal')">＋ A’zo qo‘shish</button>
+                    </div><input class="field" id="search" placeholder="Ism yoki yo‘nalish bo‘yicha qidirish..."
+                        style="max-width:340px;margin-bottom:15px">
+                    <div class="grid" id="members"></div>
+                </section>
+                <section class="page" id="clubs">
+                    <div class="head"><div><div class="eyebrow">Talabalar tashabbuslari</div><h1 class="title">Klublar</h1><p class="sub">Faol klublar va ularning tasdiqlangan faoliyati.</p></div><button class="btn alt" data-write-role="admin" onclick="openM('clubModal')">＋ Klub yaratish</button></div>
+                    <div class="grid" id="clubGrid"><p class="sub">Klublar yuklanmoqda.</p></div>
+                </section>
+                <section class="page" id="duties">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Mas’uliyat va natija</div>
+                            <h1 class="title">Vazifalar va KPI</h1>
+                            <p class="sub">Oldindan belgilangan mezonlar va hisobdorlik.</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>100 ballik KPI mezonlari</h3>
+                        <div class="bar"><span>Reja bajarilishi</span>
+                            <div class="track"><i style="width:30%"></i></div><b>30</b>
+                        </div>
+                        <div class="bar"><span>Real natija va sifat</span>
+                            <div class="track"><i style="width:25%"></i></div><b>25</b>
+                        </div>
+                        <div class="bar"><span>Tashabbuskorlik</span>
+                            <div class="track"><i style="width:15%"></i></div><b>15</b>
+                        </div>
+                        <div class="bar"><span>Jamoaviy ish</span>
+                            <div class="track"><i style="width:10%"></i></div><b>10</b>
+                        </div>
+                        <div class="bar"><span>Hisobot intizomi</span>
+                            <div class="track"><i style="width:10%"></i></div><b>10</b>
+                        </div>
+                        <div class="bar"><span>Talabalar fikri</span>
+                            <div class="track"><i style="width:10%"></i></div><b>10</b>
+                        </div>
+                    </div>
+                    <div class="notice">Past ballning o‘zi lavozimdan avtomatik chetlatish uchun asos emas.
+                        Ogohlantirish, izoh olish, tuzatish muddati va vakolatli organning qarori talab etiladi.</div>
+                    <div class="card">
+                        <h3>Koordinatorlar vazifalari</h3>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Koordinator</th>
+                                        <th>Asosiy mas’uliyat</th>
+                                        <th>Hisobot</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dutyRows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                <section class="page" id="reports">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Haftalik nazorat</div>
+                            <h1 class="title">Hisobotlar markazi</h1>
+                            <p class="sub">AI dastlabki tahlil qiladi, mas’ul shaxs tekshiradi va tasdiqlaydi.</p>
+                        </div><button class="btn" data-write-role="coordinator" onclick="openM('reportModal')">＋ Yangi hisobot</button>
+                    </div>
+                    <div class="notice">Muddat: har yakshanba 23:59. AI natijasi tavsiyaviy. Yakuniy ball mas’ul shaxs
+                        tasdiqlagandan keyin kuchga kiradi.</div>
+                    <div class="two">
+                        <div class="card">
+                            <h3>Hisobotlar ro‘yxati <span id="rTotal" style="color:var(--m);font-size:10px"></span></h3>
+                            <div id="reportList"></div>
+                        </div>
+                        <div class="card">
+                            <h3>AI tekshiruv mezonlari</h3>
+                            <div class="activity">
+                                <div><strong>Rejadagi vazifalar</strong><small>Hisobot vazifalarga mosmi?</small></div>
+                                <div><strong>Dalillar mavjudligi</strong><small>Foto, video, havola yoki hujjat.</small>
+                                </div>
+                                <div><strong>Natija va ishtirokchilar</strong><small>O‘lchanadigan natija va
+                                        qamrov.</small></div>
+                                <div><strong>Izchillik va takroriylik</strong><small>Oldingi hisobot bilan
+                                        solishtirish.</small></div>
+                            </div>
+                            <p class="sub" style="margin-top:17px">Hozircha AI API ulanmagan. Dastlabki ball demo
+                                algoritmi orqali hisoblanadi.</p>
+                        </div>
+                    </div>
+                </section>
+                <section class="page" id="ranking">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Ochiqlik va adolat</div>
+                            <h1 class="title">Koordinatorlar reytingi</h1>
+                            <p class="sub">Faqat tasdiqlangan KPI natijalari ommaga ko‘rsatilishi kerak.</p>
+                        </div><span class="tag warn">NAMUNA MA’LUMOT</span>
+                    </div>
+                    <div class="card">
+                        <h3>Joriy reyting</h3>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>O‘rin</th>
+                                        <th>Koordinator</th>
+                                        <th>Yo‘nalish</th>
+                                        <th>Ball</th>
+                                        <th>Holat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rankRows"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <p class="sub" style="margin-top:12px">Shaxsiy va maxfiy ma’lumotlar, ijtimoiy yordam oluvchilar
+                        haqidagi ma’lumotlar ommaga chiqarilmaydi.</p>
+                </section>
+                <section class="page" id="media">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Faoliyat arxivi</div>
+                            <h1 class="title">Media kutubxona</h1>
+                            <p class="sub">Tasdiqlangan foto va videolar yo‘nalishlar bo‘yicha jamlanadi.</p>
+                        </div><button class="btn alt" onclick="openM('mediaModal')">＋ Media qo‘shish</button>
+                    </div>
+                    <div class="media-toolbar"><input class="field" id="mediaSearch" type="search"
+                            placeholder="Tadbir yoki tavsif bo‘yicha qidirish"
+                            aria-label="Tadbir yoki tavsif bo‘yicha qidirish"><select class="field" id="mediaFilter"
+                            aria-label="Yo‘nalish bo‘yicha filtrlash">
+                            <option value="all">Barcha yo‘nalishlar</option>
+                            <option>Intellektual loyihalar</option>
+                            <option>Besh tashabbus</option>
+                            <option>Innovatsion loyihalar</option>
+                            <option>Harbiy-vatanparvarlik</option>
+                            <option>Talaba qizlar</option>
+                            <option>Media va axborot</option>
+                        </select><select class="field" id="mediaSort" aria-label="Tadbirlarni saralash">
+                            <option value="newest">Avval yangilari</option>
+                            <option value="oldest">Avval eskilari</option>
+                            <option value="title">Nomi bo‘yicha</option>
+                        </select></div>
+                    <div class="grid" id="mediaGrid"></div>
+                    <p class="sub" style="margin-top:12px">Demo rejimda fayllar serverga yuborilmaydi. Materiallar
+                        ommaga chiqishidan oldin tasdiqlanishi kerak.</p>
+                </section>
+                <section class="page" id="elections">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Vakillik va ishonch</div>
+                            <h1 class="title">Saylovlar</h1>
+                            <p class="sub">Vakansiya yuzaga kelganda ochiq nomzodlik va shaffof ovoz berish.</p>
+                        </div><button class="btn alt" data-review-role="dean" onclick="openM('electionModal')">＋ Saylov e’lon qilish</button>
+                    </div>
+                    <div class="two">
+                        <div class="card">
+                            <h3>Saylov tartibi</h3>
+                            <div class="activity">
+                                <div><strong>1. Vakansiyani e’lon qilish</strong><small>Lavozim, talablar va
+                                        muddat.</small></div>
+                                <div><strong>2. Nomzodlarni ro‘yxatga olish</strong><small>Teng imkoniyat va ochiq
+                                        talablar.</small></div>
+                                <div><strong>3. Taqdimot va savol-javob</strong><small>Nomzodlar rejasini taqdim
+                                        etadi.</small></div>
+                                <div><strong>4. Ovoz berish va bayonnoma</strong><small>Natija tekshiriladi va qayd
+                                        etiladi.</small></div>
+                                <div><strong>5. Vakolatni topshirish</strong><small>Loyiha, hujjat va hisobotlar
+                                        topshiriladi.</small></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Amaldagi saylovlar</h3>
+                            <div id="electionList"><p class="sub">Saylovlar yuklanmoqda.</p></div>
+                        </div>
+                    </div>
+                </section>
+                <section class="page" id="finance">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Moliyaviy shaffoflik</div>
+                            <h1 class="title">Budjet va homiylik</h1>
+                            <p class="sub">Mablag‘lar va moddiy yordamlar rasmiy tartibda qayd etiladi.</p>
+                        </div><button class="btn alt" onclick="openM('financeModal')">＋ Yangi yozuv</button>
+                    </div>
+                    <div class="notice">Homiylik mablag‘larini shaxsiy bank kartalariga yig‘mang. Rasmiy mablag‘lar
+                        universitet rahbariyati va buxgalteriyasi orqali yuritiladi.</div>
+                    <div class="stats">
+                        <div class="stat"><small>Qayd etilgan tushum</small>
+                            <div class="num">0 so‘m</div><em>Demo</em>
+                        </div>
+                        <div class="stat"><small>Tasdiqlangan xarajat</small>
+                            <div class="num">0 so‘m</div><em>Demo</em>
+                        </div>
+                        <div class="stat"><small>Moddiy yordam</small>
+                            <div class="num">0</div><em>Dalolatnoma bilan</em>
+                        </div>
+                        <div class="stat"><small>Ochiq so‘rovlar</small>
+                            <div class="num">0</div><em>Tasdiq kutilmoqda</em>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>Moliyaviy hujjatlar reyestri</h3>
+                        <div class="tablewrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Sana</th>
+                                        <th>Hujjat turi</th>
+                                        <th>Manba / maqsad</th>
+                                        <th>Miqdor</th>
+                                        <th>Holat</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="financeRows">
+                                    <tr>
+                                        <td colspan="5">Hozircha yozuv yo‘q.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+                <section class="page" id="rules">
+                    <div class="head">
+                        <div>
+                            <div class="eyebrow">Boshqaruv standartlari</div>
+                            <h1 class="title">Nizom va tartib</h1>
+                            <p class="sub">Kengash ishini tartibga soluvchi tamoyillar va jarayonlar.</p>
+                        </div>
+                    </div>
+                    <div class="two">
+                        <div class="card">
+                            <h3>Asosiy tamoyillar</h3>
+                            <div class="activity">
+                                <div><strong>Shaffoflik</strong><small>Vazifa, muddat, ball va qarorlar
+                                        tushunarli.</small></div>
+                                <div><strong>Hisobdorlik</strong><small>Har bir koordinator natija va dalil bilan
+                                        hisobot beradi.</small></div>
+                                <div><strong>Adolat</strong><small>Bir xil mezon, izoh va e’tiroz bildirish
+                                        huquqi.</small></div>
+                                <div><strong>Vakolat chegarasi</strong><small>Rasmiy qarorlarni vakolatli universitet
+                                        organlari qabul qiladi.</small></div>
+                                <div><strong>Maxfiylik</strong><small>Talabalarning shaxsiy ma’lumotlari
+                                        himoyalanadi.</small></div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <h3>Haftalik ish sikli</h3>
+                            <div class="activity">
+                                <div><strong>Dushanba · Rejalashtirish</strong><small>Vazifa va muddatlarni
+                                        belgilash.</small></div>
+                                <div><strong>Chorshanba · Oraliq nazorat</strong><small>Muammolar va yordam
+                                        ehtiyojlari.</small></div>
+                                <div><strong>Yakshanba · Hisobot</strong><small>23:59 gacha dalillar bilan
+                                        topshirish.</small></div>
+                                <div><strong>Keyingi hafta · Tasdiqlash</strong><small>Mas’ul shaxs tekshiradi va KPI ni
+                                        tasdiqlaydi.</small></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="notice">Bu loyihaviy ichki tartib. Rasmiy qo‘llashdan oldin universitet rahbariyati va
+                        tegishli bo‘linmalar bilan kelishish zarur.</div>
+                </section>
+                <section class="page" id="verification">
+                    <div class="head"><div><div class="eyebrow">Dekanat ko‘rib chiqishi</div><h1 class="title">Talaba verifikatsiyasi</h1><p class="sub">Yuklangan talabalik rasmi va ma’lumotlarini tekshiring.</p></div></div>
+                    <div class="card"><h3>Talabalik arizalari</h3><div id="verificationQueue"><p class="sub">Arizalar yuklanmoqda.</p></div></div>
+                    <div class="card" style="margin-top:15px"><h3>Hisobotlar navbati</h3><div id="deanReportQueue"><p class="sub">Hisobotlar yuklanmoqda.</p></div></div>
+                </section>
+            </div>
+            <footer class="foot"><span>© 2026 Soliq oliy maktabi · Yoshlar kengashi</span><span>Yoshlar tashabbusi.
+                    Umumiy kelajak. · Prototip v0.2</span></footer>
+        </main>
+    </div>
+
+    <div class="modal" id="clubModal"><div class="box"><div class="boxhead"><h3>Yangi klub</h3><button class="close" onclick="closeM('clubModal')" aria-label="Yopish">×</button></div><form id="clubForm" class="formrow"><div><label>Klub nomi</label><input class="field" id="clubName" required></div><div><label>URL qisqa nomi</label><input class="field" id="clubSlug" pattern="[a-z0-9]+(-[a-z0-9]+)*" required></div><div class="full"><label>Yo‘nalish</label><input class="field" id="clubCategory" required></div><div class="full"><label>Tavsif</label><textarea class="field" id="clubDescription"></textarea></div><div class="full" style="text-align:right"><button class="btn">Klub yaratish</button></div></form></div></div>
+    <div class="modal" id="reportModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Haftalik hisobot topshirish</h3><button class="close" onclick="closeM('reportModal')">×</button>
+            </div>
+            <form id="reportForm" class="formrow">
+                <div><label>Koordinator</label><select id="reportMember"></select></div>
+                <div><label>Hafta</label><input class="field" type="week" required></div>
+                <div class="full"><label>Klub</label><select class="field" id="reportClub" required></select></div>
+                <div><label>Tadbir nomi</label><input class="field" id="reportEvent" required></div>
+                <div><label>Media yo‘nalishi</label><select class="field" id="reportCategory" required>
+                        <option>Intellektual loyihalar</option>
+                        <option>Besh tashabbus</option>
+                        <option>Innovatsion loyihalar</option>
+                        <option>Harbiy-vatanparvarlik</option>
+                        <option>Talaba qizlar</option>
+                        <option>Media va axborot</option>
+                    </select></div>
+                <div class="full"><label>Bajarilgan ishlar va natijalar</label><textarea id="reportText" required
+                        placeholder="Vazifalar, natijalar, ishtirokchilar soni..."></textarea></div>
+                <div class="full"><label>Dalillar (foto, video, hujjat)</label><input class="field" type="file"
+                        id="evidence" multiple></div>
+                <div class="full" style="text-align:right"><button class="btn">AI dastlabki tekshiruvi</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="modal" id="memberModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Yangi a’zo qo‘shish</h3><button class="close" onclick="closeM('memberModal')">×</button>
+            </div>
+            <form id="memberForm" class="formrow">
+                <div><label>Ism</label><input class="field" id="first" required></div>
+                <div><label>Familiya</label><input class="field" id="last" required></div>
+                <div class="full"><label>Lavozim</label><input class="field" id="role" required></div>
+                <div class="full"><label>Vazifalar</label><textarea id="duty"></textarea></div>
+                <div class="full"><label>Rasm</label><input class="field" id="memberPhoto" type="file" accept="image/jpeg,image/png,image/webp,image/gif"><div class="member-photo-preview" id="memberPhotoPreview" hidden><img id="memberPhotoPreviewImage" alt="Tanlangan a’zo rasmi"><button class="btn alt" id="clearMemberPhoto" type="button">Rasmni olib tashlash</button></div></div>
+                <div class="full" style="text-align:right"><button class="btn">Saqlash</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="modal" id="detailModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Koordinator profili</h3><button class="close" onclick="closeM('detailModal')">×</button>
+            </div>
+            <div id="detail"></div>
+        </div>
+    </div>
+    <div class="modal" id="mediaModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Media material</h3><button class="close" onclick="closeM('mediaModal')">×</button>
+            </div>
+            <form id="mediaForm" class="formrow">
+                <div><label>Yo‘nalish</label><select>
+                        <option>Intellektual</option>
+                        <option>Besh tashabbus</option>
+                        <option>Innovatsiya</option>
+                        <option>Media</option>
+                    </select></div>
+                <div><label>Material nomi</label><input class="field" required></div>
+                <div class="full"><label>Fayl</label><input class="field" type="file" required></div>
+                <div class="full" style="text-align:right"><button class="btn">Tasdiqqa yuborish</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="modal" id="electionModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Saylov e’loni</h3><button class="close" onclick="closeM('electionModal')">×</button>
+            </div>
+            <form id="electionForm" class="formrow">
+                <div class="full"><label>Klub</label><select class="field" id="electionClub" required></select></div>
+                <div class="full"><label>Vakant lavozim</label><input class="field" id="electionPosition" required></div>
+                <div><label>Boshlanish</label><input class="field" id="electionStarts" type="datetime-local" required></div>
+                <div><label>Yakun</label><input class="field" id="electionEnds" type="datetime-local" required></div>
+                <div class="full"><label>Talablar</label><textarea required></textarea></div>
+                <div class="full" style="text-align:right"><button class="btn">E’lon loyihasini saqlash</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="modal" id="financeModal">
+        <div class="box">
+            <div class="boxhead">
+                <h3>Moliyaviy yozuv</h3><button class="close" onclick="closeM('financeModal')">×</button>
+            </div>
+            <form id="financeForm" class="formrow">
+                <div><label>Hujjat turi</label><select>
+                        <option>Homiylik tushumi</option>
+                        <option>Xarajat</option>
+                        <option>Moddiy yordam</option>
+                    </select></div>
+                <div><label>Miqdor (so‘m)</label><input class="field" type="number" min="0" required></div>
+                <div class="full"><label>Manba / maqsad</label><input class="field" required></div>
+                <div class="full" style="text-align:right"><button class="btn">Tasdiqqa yuborish</button></div>
+            </form>
+        </div>
+    </div>
+    <div class="gallery-modal" id="galleryModal" role="dialog" aria-modal="true" aria-label="Tadbir rasmlari"><button
+            class="gallery-control" id="galleryPrev" type="button" aria-label="Oldingi rasm"
+            title="Oldingi rasm">‹</button>
+        <div class="gallery-stage"><img id="galleryImage" src="" alt="">
+            <div class="gallery-caption"><strong id="galleryTitle"></strong><span id="galleryPosition"></span></div>
+        </div><button class="gallery-control" id="galleryNext" type="button" aria-label="Keyingi rasm"
+            title="Keyingi rasm">›</button><button class="close" id="galleryClose" type="button"
+            aria-label="Yopish">×</button>
+    </div>
+    <script>
+        const M = [
+            ['Muhammadaziz', 'Olimbayev', 'Yoshlar yetakchisi', 'Kengash faoliyatini muvofiqlashtirish, rahbariyat va talabalar o‘rtasida aloqa, loyihalar va yig‘ilishlar nazorati.', 90],
+            ['Jasmina', 'Yangiyeva', 'Intellektual loyihalar koordinatori', 'Zakovat, olimpiada, debat va intellektual musobaqalar; iqtidorli talabalarni aniqlash.', 92],
+            ['Aliya', 'Shaydullina', 'Besh tashabbus loyihalari koordinatori', 'Madaniyat, san’at, sport, kitobxonlik va IT tadbirlari hamda tanlovlari.', 80],
+            ['Mirfayz', 'Elmurodov', 'Harbiy-vatanparvarlik loyihalari koordinatori', 'Vatanparvarlik tadbirlari, ekskursiyalar va “Mard o‘g‘lonlar” loyihalari.', 78],
+            ['Shoxrux', 'Sharipov', 'Tadbirkorlik va innovatsion loyihalar koordinatori', 'Startap, innovatsion tashabbuslar, biznes trening va tadbirkorlar bilan uchrashuvlar.', 84],
+            ['Shaxzodabonu', 'Maxamatsoliyeva', '“Yoshlar daftari” va metsenatlik dasturlari koordinatori', 'Ijtimoiy ko‘makka muhtoj talabalar va homiylik dasturlarini muvofiqlashtirish.', 76],
+            ['Malika', 'Roziyeva', 'Talaba qizlar koordinatori', 'Talaba qizlar faolligi, huquqlari, kasbiy rivojlanishi va tashabbuslari.', 86],
+            ['Fayozbek', 'Jonboyev', 'Media va axborot yo‘nalishi koordinatori', 'Kengash sahifalari, foto-video, maqola, e’lon va jamoatchilik bilan aloqa.', 88],
+            ['Sanjarbek', 'Alijonov', 'Soliqlar va buxgalteriya hisobi fakulteti koordinatori', 'Fakultet muammolari, dekanat bilan hamkorlik va talabalarni loyihalarga jalb qilish.', 82],
+            ['Timurxon', 'Ablayarov', 'Akademik guruhlar koordinatori', 'Guruh sardorlari bilan ishlash, o‘quv jarayoni muammolarini aniqlash.', 75],
+            ['Mohinur', 'Abdukarimova', 'Fakultet talaba qizlar koordinatori', 'Fakultetdagi talaba qizlarning faolligi, tashabbuslari va muammolari.', 83]
+        ];
+        const photos = { Jasmina: 'jasmina', Aliya: 'aliya', Mirfayz: 'mirfayz', Shoxrux: 'shohrux', Shaxzodabonu: 'shazodabonu', Malika: 'malika', Fayozbek: 'fayozbek', Sanjarbek: 'sanjarbek', Timurxon: 'timurxon', Mohinur: 'mohinur' };
+        let R = [
+            { n: 'Jasmina Yangiyeva', w: '2026-W45', event: 'Zakovat turniri', category: 'Intellektual loyihalar', description: '36 nafar talaba qatnashdi. Foto va ishtirokchilar ro‘yxati ilova qilindi.', t: 'Zakovat turniri tashkil etildi. 36 nafar talaba qatnashdi. Foto va ishtirokchilar ro‘yxati ilova qilindi.', s: 92, status: 'Tasdiqlangan', proof: true, images: ['hisobotlar/zakovat/photo_2026-11-08_08-46-31.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-34.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-35.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-43.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-45.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-46%20(2).jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-47.jpg', 'hisobotlar/zakovat/photo_2026-11-08_08-46-49.jpg'] },
+            { n: 'Fayozbek Jonboyev', w: '2026-W45', event: 'Islom sivilizatsiyasi markaziga sayohat', category: 'Besh tashabbus', description: 'Talabalar uchun madaniy-ma’rifiy sayohat tashkil etildi.', t: 'Islom sivilizatsiyasi markaziga sayohat tashkillashtirildi', s: 88, status: 'Tekshiruvda', proof: true, images: ['hisobotlar/sivilizatsiya/photo_2026-11-08_08-55-50.jpg', 'hisobotlar/sivilizatsiya/photo_2026-11-08_08-56-03.jpg', 'hisobotlar/sivilizatsiya/photo_2026-11-08_08-56-08.jpg', 'hisobotlar/sivilizatsiya/photo_2026-11-08_08-56-12.jpg', 'hisobotlar/sivilizatsiya/photo_2026-11-08_08-56-14.jpg', 'hisobotlar/sivilizatsiya/photo_2026-11-08_08-56-17.jpg'] },
+            { n: 'Shoxrux Sharipov', w: '2026-W45', event: 'Startap g‘oyalari uchrashuvi', category: 'Innovatsion loyihalar', description: '18 nafar ishtirokchi bilan startap g‘oyalari muhokama qilindi.', t: 'Startap g‘oyalari bo‘yicha uchrashuv o‘tkazildi. 18 nafar ishtirokchi.', s: 84, status: 'Tuzatish kerak', proof: false }
+        ];
+        const $ = s => document.querySelector(s), initials = m => (m[0][0] + m[1][0]).toUpperCase();
+        const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+        function memberPhoto(m, detail = false) { const src = m[5] || (photos[m[0]] ? `assets/${photos[m[0]]}.jpg` : ''); if (src) return `<img class="${detail ? 'detail-portrait' : ''}" src="${src}" alt="${m[0]} ${m[1]}" loading="lazy">`; return detail ? `<div class="mark">${initials(m)}</div>` : `<div class="portrait-fallback">${initials(m)}</div>` }
+        let backendReady = false, currentUser = null, csrfToken = '';
+        async function api(path, options = {}) { const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } }); const result = await response.json().catch(() => ({})); if (!response.ok) throw new Error(result.error || 'Server so‘rovni bajara olmadi.'); return result }
+        async function loadBackendState() { try { const state = await api('/api/state'); M.splice(0, M.length, ...state.members); R = state.reports; backendReady = true; $('#modeBadge').textContent = '● SQLITE BAZA'; render(); renderDashboard(state.summary, state.top_clubs, state.work_history); await loadClubs() } catch (error) { backendReady = false; $('#modeBadge').textContent = '● DEMO REJIM'; console.info('Backend ulanmagan, demo ma’lumotlari ishlatilmoqda.', error.message) } }
+        async function loadClubs() { const result = await api('/api/clubs'), clubs = result.items; $('#clubGrid').innerHTML = clubs.length ? clubs.map(club => `<article class="member"><h3>${escapeHtml(club.name)}</h3><small>${escapeHtml(club.category)} · ${club.active_members} faol a’zo</small><p>${escapeHtml(club.description)}</p><p class="sub">${club.approved_reports} tasdiqlangan hisobot${club.average_score == null ? '' : ` · o‘rtacha ${escapeHtml(club.average_score)}`}</p>${currentUser?.status === 'verified' && currentUser.roles.includes('student') ? `<button class="btn alt" onclick="joinClub(${club.id})">A’zolikka ariza</button>` : ''}</article>`).join('') : '<p class="sub">Hozircha faol klub ro‘yxatga olinmagan.</p>'; const options = clubs.map(club => `<option value="${club.id}">${escapeHtml(club.name)}</option>`).join(''); $('#reportClub').innerHTML = options || '<option value="">Avval klub yaratilishi kerak</option>'; $('#electionClub').innerHTML = options || '<option value="">Avval klub yaratilishi kerak</option>'; await renderElections() }
+        async function renderElections() { try { const result = await api('/api/elections'), eligibleStudent = currentUser?.status === 'verified' && currentUser.roles.includes('student'); if (!result.items.length) { $('#electionList').innerHTML = '<p class="sub">Hozircha faol saylov e’lon qilinmagan.</p>'; return } const cards = await Promise.all(result.items.map(async election => { const candidateResult = await api(`/api/elections/${election.id}/candidates`), candidates = candidateResult.items; const results = election.status === 'published' ? (await api(`/api/elections/${election.id}/results`)).items : []; return `<article class="report"><h3>${escapeHtml(election.position_title)} · ${escapeHtml(election.club_name)}</h3><small>${escapeHtml(election.starts_at)} — ${escapeHtml(election.ends_at)} · ${escapeHtml(election.status)}</small>${candidates.map(candidate => `<div class="media-event"><strong>${escapeHtml(candidate.display_name)}</strong><p>${escapeHtml(candidate.statement)}</p>${election.status === 'open' && eligibleStudent ? `<button class="btn alt" onclick="voteElection(${election.id},${candidate.id})">Yashirin ovoz berish</button>` : ''}</div>`).join('')}${election.status === 'candidate_review' && eligibleStudent ? `<form onsubmit="submitCandidate(event,${election.id})"><label>Nomzod dasturi</label><textarea class="field" id="candidateStatement${election.id}" required></textarea><button class="btn alt" style="margin-top:8px">Nomzodlikka ariza</button></form>` : ''}${results.map(item => `<div class="bar"><span>${escapeHtml(item.display_name)}</span><div class="track"><i style="width:${item.vote_count ? 100 : 0}%"></i></div><b>${item.vote_count}</b></div>`).join('')}</article>` })).join(''); $('#electionList').innerHTML = cards } catch (error) { $('#electionList').innerHTML = `<p class="sub">${escapeHtml(error.message)}</p>` } }
+        async function joinClub(clubId) { try { await api(`/api/clubs/${clubId}/join`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: '{}' }); alert('Klubga a’zolik arizasi yuborildi.'); await loadClubs() } catch (error) { alert(error.message) } }
+        async function submitCandidate(event, electionId) { event.preventDefault(); try { await api(`/api/elections/${electionId}/candidates`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ statement: $(`#candidateStatement${electionId}`).value }) }); alert('Nomzodlik arizasi dekanat ko‘rib chiqishiga yuborildi.'); await renderElections() } catch (error) { alert(error.message) } }
+        async function voteElection(electionId, candidateId) { if (!confirm('Ovozingizni yuborasizmi? Ovoz maxfiy va qaytarib bo‘lmaydi.')) return; try { await api(`/api/elections/${electionId}/vote`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ candidate_id: candidateId }) }); alert('Ovoz maxfiy tarzda qayd etildi.'); await renderElections() } catch (error) { alert(error.message) } }
+        function updateAuthUI() { const roles = currentUser?.roles || []; $('#authOpen').hidden = !!currentUser; $('#profileSettingsOpen').hidden = !currentUser; $('#logoutButton').hidden = !currentUser; $('#authSummary').textContent = currentUser ? `${currentUser.display_name} · ${currentUser.status === 'verified' ? roles.join(', ') || 'foydalanuvchi' : 'Dekanat tekshiruvida'}` : 'Mehmon'; $('#sidebarName').textContent = currentUser?.display_name || 'Mehmon'; $('#sidebarMeta').textContent = currentUser ? (currentUser.status === 'verified' ? roles.join(', ') || 'Foydalanuvchi' : 'Dekanat tekshiruvida') : 'Ochiq ma’lumotlar'; $('#verificationNav').hidden = !roles.some(role => ['dean', 'admin'].includes(role)); document.querySelectorAll('[data-write-role="admin"]').forEach(button => button.hidden = !roles.includes('admin')); document.querySelectorAll('[data-write-role="coordinator"]').forEach(button => button.hidden = !roles.some(role => ['coordinator', 'admin'].includes(role))); document.querySelectorAll('[data-review-role="dean"]').forEach(button => button.hidden = !roles.some(role => ['dean', 'admin'].includes(role))) }
+        async function loadAuthState() { try { const state = await api('/api/auth/me'); currentUser = state; csrfToken = state.csrf_token || ''; updateAuthUI(); await loadClubs(); if (currentUser.roles.some(role => ['dean', 'admin'].includes(role))) { await loadVerificationQueue(); await loadDeanReports() } } catch { currentUser = null; csrfToken = ''; updateAuthUI() } }
+        async function loadVerificationQueue() { try { const result = await api('/api/dean/verifications'); $('#verificationQueue').innerHTML = result.items.length ? result.items.map(item => `<article class="verification-card"><img src="/api/dean/verifications/${item.id}/photo" alt="${escapeHtml(item.display_name)} talabalik rasmi"><div><h3>${escapeHtml(item.display_name)}</h3><p>${escapeHtml(item.student_number)} · ${escapeHtml(item.faculty)} · ${escapeHtml(item.study_group)}</p><small>${escapeHtml(item.created_at)}</small><label for="reviewNote${item.id}">Izoh</label><textarea class="field" id="reviewNote${item.id}" placeholder="Qaror izohi"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" type="button" onclick="reviewStudent(${item.id},'approved')">Tasdiqlash</button><button class="btn alt" type="button" onclick="reviewStudent(${item.id},'rejected')">Rad etish</button></div></div></article>`).join('') : '<p class="sub">Ko‘rib chiqiladigan ariza yo‘q.</p>' } catch (error) { $('#verificationQueue').innerHTML = `<p class="sub">${escapeHtml(error.message)}</p>` } }
+        async function reviewStudent(id, decision) { try { await api(`/api/dean/verifications/${id}/review`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ decision, note: $(`#reviewNote${id}`).value }) }); await loadVerificationQueue(); await loadBackendState(); activity(decision === 'approved' ? 'Talaba tasdiqlandi' : 'Talaba arizasi rad etildi') } catch (error) { alert(error.message) } }
+        async function loadDeanReports() { try { const result = await api('/api/dean/reports'); $('#deanReportQueue').innerHTML = result.items.length ? result.items.map(report => `<article class="report"><h3>${escapeHtml(report.title || report.event)}</h3><small>${escapeHtml(report.member_name)} · ${escapeHtml(report.week)} · ${escapeHtml(report.category)}</small><p>${escapeHtml(report.description)}</p><div class="report-media">${report.images.map((src,index)=>`<img src="${escapeHtml(src)}" alt="${escapeHtml(report.event)} dalil rasmi ${index+1}" loading="lazy">`).join('')}</div><label for="reviewScore${report.id}">Baho (0–100)</label><input class="field" id="reviewScore${report.id}" type="number" min="0" max="100" value="${report.score}"><label for="reviewFeedback${report.id}">Izoh</label><textarea class="field" id="reviewFeedback${report.id}"></textarea><div style="display:flex;gap:8px;margin-top:10px"><button class="btn" onclick="reviewReport(${report.id},'approved')">Tasdiqlash</button><button class="btn alt" onclick="reviewReport(${report.id},'changes_requested')">Tuzatishga qaytarish</button><button class="btn alt" onclick="reviewReport(${report.id},'rejected')">Rad etish</button></div></article>`).join('') : '<p class="sub">Ko‘rib chiqiladigan hisobot yo‘q.</p>' } catch (error) { $('#deanReportQueue').innerHTML = `<p class="sub">${escapeHtml(error.message)}</p>` } }
+        async function reviewReport(id, decision) { try { await api(`/api/reports/${id}/review`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ decision, score: Number($(`#reviewScore${id}`).value), feedback: $(`#reviewFeedback${id}`).value }) }); await loadDeanReports(); await loadBackendState() } catch (error) { alert(error.message) } }
+        function setAuthMode(mode) { const registering = mode === 'register'; $('#authTitle').textContent = registering ? 'Talaba sifatida ro‘yxatdan o‘tish' : 'Tizimga kirish'; $('#registrationForm').hidden = !registering; $('#loginForm').hidden = registering; $('#authMessage').textContent = '' }
+        $('#authOpen').addEventListener('click', () => { setAuthMode('login'); openM('authModal') }); $('#showLogin').addEventListener('click', () => setAuthMode('login')); $('#showRegister').addEventListener('click', () => setAuthMode('register'));
+        $('#profileSettingsOpen').addEventListener('click', async () => { try { const settings = await api('/api/me/settings'); $('#profileDisplayName').value = settings.display_name; $('#profileLocale').value = settings.locale; $('#profileNotifications').checked = settings.email_notifications; $('#profileMessage').textContent = ''; openM('profileSettingsModal') } catch (error) { alert(error.message) } });
+        $('#profileSettingsForm').onsubmit = async event => { event.preventDefault(); try { const file = $('#profilePhoto').files[0], profilePhoto = file ? await fileAsDataUrl(file) : null; await api('/api/me/settings', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ display_name: $('#profileDisplayName').value, locale: $('#profileLocale').value, email_notifications: $('#profileNotifications').checked, profile_photo: profilePhoto }) }); currentUser.display_name = $('#profileDisplayName').value; updateAuthUI(); $('#profileMessage').textContent = 'Profil saqlandi.' } catch (error) { $('#profileMessage').textContent = error.message } };
+        $('#passwordForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/me/password', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ current_password: $('#currentPassword').value, new_password: $('#newPassword').value }) }); event.target.reset(); $('#profileMessage').textContent = 'Parol yangilandi. Boshqa sessiyalar bekor qilindi.' } catch (error) { $('#profileMessage').textContent = error.message } };
+        $('#loginForm').onsubmit = async event => { event.preventDefault(); try { const result = await api('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: $('#loginEmail').value, password: $('#loginPassword').value }) }); currentUser = result.user; csrfToken = result.csrf_token; updateAuthUI(); closeM('authModal'); await loadBackendState(); await loadAuthState() } catch (error) { $('#authMessage').textContent = error.message } };
+        $('#registrationForm').onsubmit = async event => { event.preventDefault(); const photo = $('#verificationPhoto').files[0]; if (!photo) { $('#authMessage').textContent = 'Talabalik rasmini tanlang.'; return } try { const result = await api('/api/auth/register', { method: 'POST', body: JSON.stringify({ display_name: $('#registerName').value, email: $('#registerEmail').value, password: $('#registerPassword').value, student_number: $('#registerStudentNumber').value, faculty: $('#registerFaculty').value, study_group: $('#registerGroup').value, verification_photo: await fileAsDataUrl(photo), photo_policy_ack: $('#photoPolicyAck').checked }) }); $('#registrationForm').reset(); setAuthMode('login'); $('#authMessage').textContent = result.message } catch (error) { $('#authMessage').textContent = error.message } };
+        $('#logoutButton').addEventListener('click', async () => { try { await api('/api/auth/logout', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: '{}' }) } catch (error) { console.warn(error.message) } currentUser = null; csrfToken = ''; updateAuthUI() });
+        function renderDashboard(summary, clubs, history) { $('#activeClubCount').textContent = summary.active_clubs; $('#averageKpi').textContent = summary.average_kpi; $('#topClubs').innerHTML = clubs.length ? clubs.map((club, index) => `<div class="club-rank-row"><strong>#${index + 1}</strong><div><b>${escapeHtml(club.club_name)}</b><small>${club.active_members} faol a’zo · ${club.approved_reports} tasdiqlangan hisobot</small></div><b>${escapeHtml(club.average_score)}/100</b></div>`).join('') : '<p class="sub">Reytingga kirish uchun faol klubda kamida 3 ta tasdiqlangan hisobot bo‘lishi kerak.</p>'; $('#workHistory').innerHTML = history.length ? history.map(item => `<div><strong>${escapeHtml(item.event)}</strong><small>${escapeHtml(item.category)} · ${escapeHtml(item.week)}</small><p class="sub">${escapeHtml(item.description)}</p></div>`).join('') : '<p class="sub">Hozircha tasdiqlangan faoliyat yo‘q.</p>' }
+        function fileAsDataUrl(file) { return new Promise((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.onerror = () => reject(reader.error); reader.readAsDataURL(file) }) }
+        function page(id) { document.querySelectorAll('.page').forEach(x => x.classList.toggle('show', x.id === id)); document.querySelectorAll('[data-page]').forEach(x => x.classList.toggle('on', x.dataset.page === id)); $('#crumb').textContent = document.querySelector(`[data-page="${id}"]`)?.textContent.trim() || 'Boshqaruv paneli'; $('#side').classList.remove('open'); scrollTo(0, 0) }
+        document.querySelectorAll('[data-page]').forEach(b => b.onclick = () => page(b.dataset.page));
+        function openM(id) { $('#' + id).classList.add('open') } function closeM(id) { $('#' + id).classList.remove('open') }
+        document.querySelectorAll('.modal').forEach(x => x.addEventListener('click', e => { if (e.target === x) x.classList.remove('open') }));
+        function render() {
+            const sorted = M.slice(1).sort((a, b) => b[4] - a[4]); $('#memberCount').textContent = M.length; $('#members').innerHTML = M.slice(1).map((m, i) => `<article class="member team-person" data-search="${escapeHtml((m[0] + ' ' + m[1] + ' ' + m[2]).toLowerCase())}" onclick="detail(${i + 1})"><div class="member-portrait">${memberPhoto(m)}</div><strong>${escapeHtml(m[0])} ${escapeHtml(m[1])}</strong><p>${escapeHtml(m[2])}</p><div class="score">Joriy KPI · namuna <b>${m[4]}/100</b></div><div class="track"><i style="width:${m[4]}%"></i></div></article>`).join('');
+            $('#dashRows').innerHTML = sorted.slice(0, 5).map(m => `<tr><td><b>${escapeHtml(m[0])} ${escapeHtml(m[1])}</b></td><td>${escapeHtml(m[2])}</td><td>${m[4]}/100</td><td><span class="tag">${m[4] >= 85 ? 'Yaxshi' : 'Kuzatuvda'}</span></td></tr>`).join('');
+            $('#dutyRows').innerHTML = M.slice(1).map(m => `<tr><td><b>${escapeHtml(m[0])} ${escapeHtml(m[1])}</b></td><td>${escapeHtml(m[3])}</td><td>Haftalik</td></tr>`).join('');
+            $('#rankRows').innerHTML = sorted.map((m, i) => `<tr><td>#${i + 1}</td><td><b>${escapeHtml(m[0])} ${escapeHtml(m[1])}</b></td><td>${escapeHtml(m[2])}</td><td><b>${m[4]}</b></td><td><span class="tag">${m[4] >= 85 ? 'Yuqori' : 'Yaxshi'}</span></td></tr>`).join('');
+            $('#reportMember').innerHTML = M.slice(1).map(m => `<option>${m[0]} ${m[1]}</option>`).join(''); renderReports()
+        }
+        function detail(i) { const m = M[i]; $('#detail').innerHTML = `${memberPhoto(m, true)}<h3>${escapeHtml(m[0])} ${escapeHtml(m[1])}</h3><p style="color:var(--g);font-size:10px">${escapeHtml(m[2])}</p><p class="sub">${escapeHtml(m[3])}</p><div class="score">KPI · demo <b>${m[4]}/100</b></div><div class="track"><i style="width:${m[4]}%"></i></div><p class="sub" style="margin-top:12px">Bu ball prototipdagi namuna ma’lumotdir.</p>`; openM('detailModal') }
+        const mediaCategories = ['Intellektual loyihalar', 'Besh tashabbus', 'Innovatsion loyihalar', 'Harbiy-vatanparvarlik', 'Talaba qizlar', 'Media va axborot'];
+        function renderMedia() { const query = $('#mediaSearch').value.trim().toLowerCase(), selectedCategory = $('#mediaFilter').value, sort = $('#mediaSort').value; let reports = R.map((report, index) => ({ report, index })).filter(({ report }) => report.status === 'Tasdiqlangan' && (!query || `${report.event} ${report.description} ${report.t} ${report.n} ${report.category}`.toLowerCase().includes(query))); reports.sort((a, b) => sort === 'title' ? a.report.event.localeCompare(b.report.event) : sort === 'oldest' ? a.report.w.localeCompare(b.report.w) : b.report.w.localeCompare(a.report.w)); const categories = mediaCategories.filter(category => (selectedCategory === 'all' || category === selectedCategory) && (!query || reports.some(item => item.report.category === category))); $('#mediaGrid').innerHTML = categories.map(category => { const events = reports.filter(item => item.report.category === category); return `<article class="member media-category"><h3><span>${escapeHtml(category)}</span><span class="media-count">${events.length} tadbir</span></h3>${events.map(({ report, index }) => `<div class="media-event"><h4>${escapeHtml(report.event || 'Hisobot tadbiri')}</h4><small>${escapeHtml(report.n)} · ${escapeHtml(report.w)}</small><p>${escapeHtml(report.description || report.t)}</p><div class="media-gallery">${(report.images || []).map((src, photoIndex) => `<button class="media-photo" type="button" data-report="${index}" data-photo="${photoIndex}" aria-label="${escapeHtml(report.event || 'Tadbir')} rasmini kattalashtirish"><img src="${escapeHtml(src)}" alt="${escapeHtml(report.event || 'Tadbir')} rasmi ${photoIndex + 1}" loading="lazy"></button>`).join('')}</div></div>`).join('')}</article>` }).join('') || '<div class="gallery-empty">Mos tadbir yoki rasm topilmadi.</div>' }
+        let galleryReportIndex = -1, galleryPhotoIndex = 0;
+        function updateGallery() { const report = R[galleryReportIndex], images = report.images || []; $('#galleryImage').src = images[galleryPhotoIndex]; $('#galleryImage').alt = `${report.event || 'Tadbir'} rasmi ${galleryPhotoIndex + 1}`; $('#galleryTitle').textContent = report.event || 'Tadbir'; $('#galleryPosition').textContent = `${report.n} · ${report.w} · ${galleryPhotoIndex + 1}/${images.length}`; $('#galleryPrev').disabled = galleryPhotoIndex === 0; $('#galleryNext').disabled = galleryPhotoIndex === images.length - 1 }
+        function openGallery(reportIndex, photoIndex) { galleryReportIndex = reportIndex; galleryPhotoIndex = photoIndex; updateGallery(); $('#galleryModal').classList.add('open'); $('#galleryClose').focus() }
+        function closeGallery() { $('#galleryModal').classList.remove('open') }
+        function moveGallery(step) { galleryPhotoIndex = Math.max(0, Math.min((R[galleryReportIndex].images || []).length - 1, galleryPhotoIndex + step)); updateGallery() }
+        $('#mediaGrid').addEventListener('click', e => { const button = e.target.closest('.media-photo'); if (button) openGallery(Number(button.dataset.report), Number(button.dataset.photo)) });
+        $('#mediaSearch').addEventListener('input', renderMedia); $('#mediaFilter').addEventListener('change', renderMedia); $('#mediaSort').addEventListener('change', renderMedia);
+        $('#galleryPrev').addEventListener('click', () => moveGallery(-1)); $('#galleryNext').addEventListener('click', () => moveGallery(1)); $('#galleryClose').addEventListener('click', closeGallery); $('#galleryModal').addEventListener('click', e => { if (e.target.id === 'galleryModal') closeGallery() }); document.addEventListener('keydown', e => { if (!$('#galleryModal').classList.contains('open')) return; if (e.key === 'Escape') closeGallery(); if (e.key === 'ArrowLeft') moveGallery(-1); if (e.key === 'ArrowRight') moveGallery(1) });
+        function renderReports() { $('#reportCount').textContent = String(R.length).padStart(2, '0'); $('#rTotal').textContent = '· ' + R.length + ' ta'; $('#reportList').innerHTML = R.map((r, i) => `<div class="report"><div style="display:flex;justify-content:space-between;gap:8px"><strong>${escapeHtml(r.n)}</strong><b style="color:var(--g);font-size:11px">${r.s}/100</b></div><small style="color:var(--m)">${escapeHtml(r.w)} · ${r.proof ? 'Dalil biriktirilgan' : 'Dalil yo‘q'}</small><p>${escapeHtml(r.t)}</p><div class="report-media">${(r.images || []).map((src, j) => `<img src="${escapeHtml(src)}" alt="${escapeHtml(r.n)} hisoboti rasmi ${j + 1}" loading="lazy">`).join('')}</div><span class="tag ${r.status === 'Tasdiqlangan' ? '' : 'warn'}">${escapeHtml(r.status)}</span> ${r.status !== 'Tasdiqlangan' ? `<button class="btn alt" data-review-role="dean" style="float:right" onclick="approve(${i})">Tekshirish / tasdiqlash</button>` : ''}</div>`).join(''); renderMedia(); updateAuthUI() }
+        async function approve(i) { if (!confirm('Hisobotni tasdiqlaysizmi?')) return; try { if (backendReady && R[i].id) await api(`/api/reports/${R[i].id}/approve`, { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: '{}' }); R[i].status = 'Tasdiqlangan'; renderReports(); activity('Hisobot tasdiqlandi: ' + R[i].n) } catch (error) { alert(error.message) } }
+        function activity(t) { const d = document.createElement('div'); d.innerHTML = `<strong>${t}</strong><small>Hozir · demo jurnal</small>`; $('#activity').prepend(d) }
+        $('#search').addEventListener('input', e => document.querySelectorAll('#members .member').forEach(x => x.style.display = x.dataset.search.includes(e.target.value.toLowerCase()) ? '' : 'none'));
+        $('#reportForm').onsubmit = async e => { e.preventDefault(); const t = $('#reportText').value, files = [...$('#evidence').files], proof = files.length, words = t.trim().split(/\s+/).length, s = Math.min(100, Math.max(45, Math.round(55 + Math.min(20, words / 5) + (proof ? 15 : 0)))), report = { n: $('#reportMember').value, w: e.target.querySelector('[type=week]').value || 'Joriy hafta', event: $('#reportEvent').value, category: $('#reportCategory').value, description: t, t, s, status: 'Tekshiruvda', proof: !!proof }; try { if (backendReady) { const images = await Promise.all(files.filter(file => file.type.startsWith('image/')).map(fileAsDataUrl)); await api('/api/reports', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ member: report.n, week: report.w, event: report.event, category: report.category, description: t, score: s, proof: !!proof, images, club_id: Number($('#reportClub').value) }) }); await loadBackendState() } else { report.images = files.filter(file => file.type.startsWith('image/')).map(file => URL.createObjectURL(file)); R.unshift(report); renderReports() } activity('Yangi hisobot qabul qilindi'); closeM('reportModal'); e.target.reset(); alert('Hisobot ko‘rib chiqishga yuborildi.'); page('reports') } catch (error) { alert(error.message) } };
+        let memberPhotoPreviewUrl = null;
+        function clearMemberPhoto() { if (memberPhotoPreviewUrl) URL.revokeObjectURL(memberPhotoPreviewUrl); memberPhotoPreviewUrl = null; $('#memberPhoto').value = ''; $('#memberPhotoPreviewImage').src = ''; $('#memberPhotoPreview').hidden = true }
+        $('#memberPhoto').addEventListener('change', e => { if (memberPhotoPreviewUrl) URL.revokeObjectURL(memberPhotoPreviewUrl); const file = e.target.files[0]; memberPhotoPreviewUrl = file ? URL.createObjectURL(file) : null; $('#memberPhotoPreviewImage').src = memberPhotoPreviewUrl || ''; $('#memberPhotoPreview').hidden = !file });
+        $('#clearMemberPhoto').addEventListener('click', clearMemberPhoto);
+        $('#memberForm').onsubmit = async e => { e.preventDefault(); const file = $('#memberPhoto').files[0], member = [$('#first').value, $('#last').value, $('#role').value, $('#duty').value || 'Vazifalar belgilanadi.', 0]; try { if (backendReady) { const photo = file ? await fileAsDataUrl(file) : null; await api('/api/members', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ first: member[0], last: member[1], role: member[2], duty: member[3], photo }) }); await loadBackendState() } else { if (file) member[5] = URL.createObjectURL(file); M.push(member); render() } closeM('memberModal'); e.target.reset(); clearMemberPhoto(); activity('Yangi a’zo qo‘shildi') } catch (error) { alert(error.message) } };
+        $('#clubForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/clubs', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ name: $('#clubName').value, slug: $('#clubSlug').value, category: $('#clubCategory').value, description: $('#clubDescription').value }) }); event.target.reset(); closeM('clubModal'); await loadClubs() } catch (error) { alert(error.message) } };
+        $('#electionForm').onsubmit = async event => { event.preventDefault(); try { await api('/api/elections', { method: 'POST', headers: { 'X-CSRF-Token': csrfToken }, body: JSON.stringify({ club_id: Number($('#electionClub').value), position_title: $('#electionPosition').value, starts_at: new Date($('#electionStarts').value).toISOString(), ends_at: new Date($('#electionEnds').value).toISOString() }) }); event.target.reset(); closeM('electionModal'); await renderElections() } catch (error) { alert(error.message) } };
+        ['mediaForm', 'financeForm'].forEach(id => $('#' + id).onsubmit = e => { e.preventDefault(); closeM(id.replace('Form', 'Modal')); e.target.reset(); alert('Bu modul hali serverga ulanmagan.') });
+        render(); loadBackendState(); loadAuthState();
+    </script>
+</body>
+
+</html>
